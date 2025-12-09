@@ -1,12 +1,10 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
-import com.sun.jdi.VMCannotBeModifiedException;
-
 public class Dictionary
 {
     private Node root;
 
-    public void setRoot(Node root) { this.root = root; }
+    public Node getRoot() { return root; }
 
     public Node createTree(Node left, Node right)
     {
@@ -15,6 +13,30 @@ public class Dictionary
         newNode.setLeft(left);
         newNode.setRight(right);
         return newNode;
+    }
+
+    public void createDictionary(PriorityQueue pq)
+    {
+        Node left;
+        Node right;
+
+        while(true) {
+
+            if((left = pq.pull()) == null) {
+                break;
+            }
+
+            if((right = pq.pull()) == null) {
+                pq.add(left);
+                break;
+            }
+
+            pq.add(createTree(left, right));
+        }
+
+        if(!pq.isEmpty()) {
+            root = pq.pull();
+        }
     }
 
     public void compressDictionary(ByteWriter bw) {
@@ -66,7 +88,9 @@ public class Dictionary
     }
 
     public void printDictionary() {
-       printDictionary(root);
+        if(root != null) {
+            printDictionary(root);
+        }
     }
 
     private void printDictionary(Node node) {
@@ -78,7 +102,6 @@ public class Dictionary
         }
 
         System.out.println("counter: " + node.getCounter() + ", code: " + Integer.toBinaryString(node.getCode()));
-
 
     }
 }

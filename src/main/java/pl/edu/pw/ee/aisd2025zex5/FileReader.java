@@ -36,6 +36,23 @@ public class FileReader
         }
     }
 
+    public void readFile(String file_path, ByteWriter bw)
+    {
+        int b;
+        InputStream input;
+        try {
+            input = new BufferedInputStream(new FileInputStream(file_path));
+            while ((b = input.read()) != -1) {
+                //bw.compressByte();
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+    }
+
     public void printFile() {
 
         char c;
@@ -48,10 +65,11 @@ public class FileReader
         }
     }
 
-    public static void main(String [] args) {
+    public static void main(String [] args)
+    {
         FileReader fr = new FileReader();
 
-        fr.countCodes("C:\\Users\\kilux\\OneDrive\\Studia\\Semestr_3\\AiSD\\Laboratoria\\2025Z_AISD_2025Z_GR3_gr24\\CW_5\\AiSD2025ZEx5\\src\\main\\java\\pl\\edu\\pw\\ee\\aisd2025zex5\\test.txt");
+        fr.countCodes("src/main/java/pl/edu/pw/ee/aisd2025zex5/test.txt");
         fr.printFile();
 
         int [] counters = fr.getCounters();
@@ -65,45 +83,24 @@ public class FileReader
 
         Dictionary dictionary = new Dictionary();
 
-        Node left;
-        Node right;
-
-        while(true) {
-
-            if((left = pq.pull()) == null) {
-                break;
-            }
-
-            if((right = pq.pull()) == null) {
-                pq.add(left);
-                break;
-            }
-
-            pq.add(dictionary.createTree(left, right));
-        }
-
-        if(!pq.isEmpty()) {
-            dictionary.setRoot(pq.pull());
-        }
-
+        dictionary.createDictionary(pq);
         dictionary.printDictionary();
 
         ByteWriter bw = new ByteWriter();
         dictionary.compressDictionary(bw);
 
         try {
-            BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream("C:\\Users\\kilux\\OneDrive\\Studia\\Semestr_3\\AiSD\\Laboratoria\\2025Z_AISD_2025Z_GR3_gr24\\CW_5\\AiSD2025ZEx5\\src\\main\\java\\pl\\edu\\pw\\ee\\aisd2025zex5\\output.txt"));
-            bw.writeOutput(outputStream);
-            outputStream.close();
+            BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream("src/main/java/pl/edu/pw/ee/aisd2025zex5/output.txt"));
+            bw.writeTree(outputStream);
+
+            //outputStream.close();
         } catch (FileNotFoundException e) {
             System.out.println(e.getMessage());
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
 
-        ByteReader br = new ByteReader("C:\\Users\\kilux\\OneDrive\\Studia\\Semestr_3\\AiSD\\Laboratoria\\2025Z_AISD_2025Z_GR3_gr24\\CW_5\\AiSD2025ZEx5\\src\\main\\java\\pl\\edu\\pw\\ee\\aisd2025zex5\\output.txt");
-        br.readNumberOfZeros();
-        System.out.println("nrOfZeros: " + br.numberOfZeros);
+        ByteReader br = new ByteReader("src/main/java/pl/edu/pw/ee/aisd2025zex5/output.txt");
 
         Dictionary decompressed = new Dictionary();
         decompressed.decompressDictionary(br);

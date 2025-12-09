@@ -39,8 +39,8 @@ public class ByteWriter
         }
     }
 
-    public void writeOutput(BufferedOutputStream outputStream) {
-
+    public void writeTree(BufferedOutputStream outputStream)
+    {
         byte numberOfZeros = (byte)counter;
         output[0] = (byte)((numberOfZeros << 5) | output[0]);
 
@@ -58,6 +58,6 @@ public class ByteWriter
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
-
     }
+
 }
