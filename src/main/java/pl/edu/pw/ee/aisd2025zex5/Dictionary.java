@@ -3,13 +3,18 @@ package pl.edu.pw.ee.aisd2025zex5;
 public class Dictionary
 {
     private Node root;
+    private int size;
+
+    public Dictionary(PriorityQueue pq, int size) {
+        createDictionary(pq);
+    }
 
     public Node getRoot() { return root; }
 
     public Node createTree(Node left, Node right)
     {
         int counter = left.getCounter() + right.getCounter();
-        Node newNode = new Node(counter, (byte)0);
+        Node newNode = new Node(counter, null);
         newNode.setLeft(left);
         newNode.setRight(right);
         return newNode;

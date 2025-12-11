@@ -4,6 +4,10 @@ public class PriorityQueue
 {
     private QueueElement head;
 
+    public PriorityQueue(int [] counters) {
+        createPriorityQueue(counters);
+    }
+
     public void add(Node elem)
     {
         if(isEmpty()) {
@@ -12,6 +16,17 @@ public class PriorityQueue
         }
 
         head = add(head, elem);
+    }
+
+    public Node pull() {
+
+        if(!isEmpty()) {
+            QueueElement elem = head;
+            head = elem.next;
+            return elem.node;
+        }
+
+        return null;
     }
 
     public QueueElement add(QueueElement elem, Node node)
@@ -31,17 +46,13 @@ public class PriorityQueue
         return elem;
     }
 
-    public Node pull() {
-
-        if(!isEmpty()) {
-            QueueElement elem = head;
-            head = elem.next;
-            return elem.node;
+    private void createPriorityQueue(int [] counters)
+    {
+        for(int i = 0; i < counters.length; i++) {
+            if(counters[i] != 0) {
+                add(new Node(counters[i], (byte)i));
+            }
         }
-
-        return null;
-
-        //throw new NullPointerException("Kolejka jest pusta");
     }
 
     public boolean isEmpty() {

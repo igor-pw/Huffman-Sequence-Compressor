@@ -65,27 +65,8 @@ public class FileReader
         }
     }
 
-    public static void main(String [] args)
+    /*public static void main(String [] args)
     {
-        FileReader fr = new FileReader();
-
-        fr.countCodes("src/main/java/pl/edu/pw/ee/aisd2025zex5/test.txt");
-        fr.printFile();
-
-        int [] counters = fr.getCounters();
-        PriorityQueue pq = new PriorityQueue();
-
-        for(int i = 0; i < counters.length; i++) {
-            if(counters[i] != 0) {
-                pq.add(new Node(counters[i], (byte)i));
-            }
-        }
-
-        Dictionary dictionary = new Dictionary();
-
-        dictionary.createDictionary(pq);
-        dictionary.printDictionary();
-
         ByteWriter bw = new ByteWriter();
         dictionary.compressDictionary(bw);
 
@@ -102,8 +83,8 @@ public class FileReader
 
         ByteReader br = new ByteReader("src/main/java/pl/edu/pw/ee/aisd2025zex5/output.txt");
 
-        Dictionary decompressed = new Dictionary();
-        decompressed.decompressDictionary(br);
-        decompressed.printDictionary();
-    }
+        //Dictionary decompressed = new Dictionary();
+        //decompressed.decompressDictionary(br);
+        //decompressed.printDictionary();
+    }*/
 }

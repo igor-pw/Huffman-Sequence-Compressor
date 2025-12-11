@@ -3,7 +3,8 @@ package pl.edu.pw.ee.aisd2025zex5;
 
 public class Node implements Comparable<Node>{
 
-    private byte code = 0;
+    private byte [] code = null;
+    private int elem = 0;
     private int counter = 0;
     private Node left;
     private Node right;
@@ -13,7 +14,7 @@ public class Node implements Comparable<Node>{
         right = null;
     }
 
-    public Node(int counter, Byte code) {
+    public Node(int counter, byte [] code) {
         this.code = code;
         this.counter = counter;
         left = null;

@@ -14,7 +14,6 @@ public class ByteWriter
     private int counter = 3;
 
     public ByteWriter() {
-            //outputStream = new ByteArrayOutputStream();
             output = new byte[512];
     }
 
