@@ -1,11 +1,12 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
+import java.io.File;
+
 public class Dictionary
 {
     private Node root;
-    private int size;
 
-    public Dictionary(PriorityQueue pq, int size) {
+    public Dictionary(PriorityQueue pq) {
         createDictionary(pq);
     }
 
@@ -44,49 +45,71 @@ public class Dictionary
         }
     }
 
-    public void compressDictionary(ByteWriter bw) {
+    public void createHuffmanCode(HashMap hash_map, ByteWriter buffer) {
+        createHuffmanCode(root, hash_map, buffer, 0);
+    }
+
+   private void createHuffmanCode(Node node, HashMap hash_map, ByteWriter buffer, int path_length)
+    {
+        if(node.isLeaf()) {
+            Code huffman_code = new Code(path_length, buffer.getWrittenBytes());
+            hash_map.putCode(node.getCode(), huffman_code);
+            return;
+        }
+
+        buffer.addBit(0);
+        createHuffmanCode(node.getLeft(), hash_map, buffer, path_length + 1);
+        buffer.removeLSB();
+        buffer.addBit(1);
+        createHuffmanCode(node.getRight(), hash_map, buffer , path_length + 1);
+        buffer.removeLSB();
+    }
+
+    public void compressDictionary(ByteWriter byte_writer) {
         if(root != null) {
-            compressDictionary(bw, root);
+             compressDictionary(byte_writer, root);
         }
     }
 
-    private void compressDictionary(ByteWriter bw, Node node) {
-
+    private void compressDictionary(ByteWriter byte_writer, Node node)
+    {
         int b = node.isLeaf() ? 1 : 0;
 
-        bw.addBit(b);
+        byte_writer.addBit(b);
 
         if(b == 1) {
-            bw.addByte(node.getCode());
+            for(int i = 0; i < node.getCode().length; i++) {
+                byte_writer.addByte(node.getCode()[i]);
+            }
         }
 
         if(node.getLeft() != null) {
-            compressDictionary(bw, node.getLeft());
+            compressDictionary(byte_writer, node.getLeft());
         }
 
         if(node.getRight() != null) {
-            compressDictionary(bw, node.getRight());
+            compressDictionary(byte_writer, node.getRight());
         }
     }
 
-    public void decompressDictionary(ByteReader br) {
-        root = buildDictionary(br);
-        System.out.println(Integer.toBinaryString(br.getBuffer()));
-        System.out.println(Integer.toBinaryString(br.nextByte()));
+    public void decompressDictionary(ByteReader br, int l) {
+        //root = buildDictionary(br, l);
+        //System.out.println(Integer.toBinaryString(br.getBuffer()));
+        //System.out.println(Integer.toBinaryString(br.nextByte()));
     }
 
-    private Node buildDictionary(ByteReader br) {
+    private Node buildDictionary(ByteReader br, int l) {
 
         Node newNode = new Node();
         int b = br.nextBit();
 
         if(b == 1) {
-           newNode.setCode(br.nextByte());
+           newNode.setCode(br.readCode(l));
         }
 
         else {
-            newNode.setLeft(buildDictionary(br));
-            newNode.setRight(buildDictionary(br));
+            newNode.setLeft(buildDictionary(br, l));
+            newNode.setRight(buildDictionary(br, l));
         }
 
         return newNode;
@@ -106,7 +129,18 @@ public class Dictionary
             printDictionary(node.getLeft());
         }
 
-        System.out.println("counter: " + node.getCounter() + ", code: " + Integer.toBinaryString(node.getCode()));
+        System.out.print("counter: " + node.getCounter() + ", code: ");
+
+        if(node.getCode() != null) {
+            for (int i = 0; i < node.getCode().length; i++) {
+                System.out.print(Integer.toBinaryString(node.getCode()[i]));
+            }
+        }
+        else {
+            System.out.print("0");
+        }
+
+        System.out.println();
 
     }
 }

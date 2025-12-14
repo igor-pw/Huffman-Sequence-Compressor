@@ -1,62 +1,122 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
-import com.sun.jdi.IntegerType;
-
-import javax.lang.model.util.ElementScanner6;
 import java.io.*;
+import java.util.Arrays;
 
 public class ByteWriter
 {
-    //private final OutputStream outputStream;
-    private final byte [] output;
-    private int elem = 0;
-    private byte buffer = 0;
-    private int counter = 3;
+    private BufferedOutputStream output_stream;
+    protected final byte[] output_buffer;
+    protected int elem = 0;
+    protected byte buffer = 0;
+    protected int counter = 3;
 
     public ByteWriter() {
-            output = new byte[512];
+        output_buffer = new byte[64 * 1024];
     }
 
-    public int getByte() { return buffer; }
-    public int getCounter() { return counter; }
+    public ByteWriter(BufferedOutputStream output_stream) {
 
-    public void addBit(int bit)
-    {
+        this.output_stream = output_stream;
+        output_buffer = new byte[64 * 1024];
+    }
+
+    public ByteWriter(int size) {
+        output_buffer = new byte[size];
+    }
+
+    public int getByte() {
+        return buffer;
+    }
+
+    public byte[] getWrittenBytes() {
+        int size;
+
+        if (counter == 0) {
+            size = elem;
+            return Arrays.copyOfRange(output_buffer, 0, size);
+        }
+
+        byte[] result = new byte[elem + 1];
+        result[elem] = buffer;
+
+        System.arraycopy(output_buffer, 0, result, 0, elem);
+
+        return result;
+    }
+
+    public void addBit(int bit) {
         buffer = (byte) ((buffer << 1) | bit);
         counter++;
 
-        if(counter >= 8) {
-            output[elem++] = buffer;
+        if (counter >= 8) {
+            output_buffer[elem++] = buffer;
             counter = 0;
+            buffer = 0;
+        }
+
+        if(elem >= output_buffer.length) {
+            write(output_stream);
         }
     }
 
-    public void addByte(byte b)
-    {
-        for(int i = 7; i >= 0; i--) {
+    public void removeLSB() {
+        if (counter == 0) {
+            elem--;
+            counter = 8;
+            buffer = output_buffer[elem];
+        }
+
+        buffer = (byte) ((buffer & 0xFF) >>> 1);
+        counter--;
+    }
+
+    public void addByte(byte b) {
+        for (int i = 7; i >= 0; i--) {
             addBit((b >> i) & 1);
         }
     }
 
-    public void writeTree(BufferedOutputStream outputStream)
-    {
-        byte numberOfZeros = (byte)counter;
-        output[0] = (byte)((numberOfZeros << 5) | output[0]);
+    public void addHuffmanCode(Code huffman_code) {
+        byte[] code = huffman_code.getHuffmanCode();
+        int huffman_elem = huffman_code.getElem();
 
-        System.out.println(Integer.toBinaryString(output[0]));
-
-        if(counter > 0) {
-            buffer = (byte) (buffer << counter);
-            addByte(buffer);
+        for (int i = 0; i < huffman_elem-1; i++) {
+            addByte(code[i]);
         }
 
-        try {
-            for(int i = 0; i < elem; i++) {
-                outputStream.write(output[i]);
-            }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+        if(huffman_code.getCounter() == 0) {
+            addByte(code[huffman_elem-1]);
+            return;
+        }
+
+        for(int i = 7; i >= 8 - huffman_code.getCounter(); i--) {
+            addBit((code[huffman_elem-1] >> i) & 1);
         }
     }
 
+    private void write(BufferedOutputStream output_stream) {
+        //System.out.println("Writing " + elem + " bytes to output stream.");
+        try {
+            output_stream.write(output_buffer, 0, elem);
+            elem = 0;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void flush () {
+        if(counter > 0) {
+            buffer = (byte) (buffer << (8 - counter));
+            output_buffer[elem++] = buffer;
+        }
+
+        try {
+            //System.out.println("Writing " + elem + " bytes to output stream.");
+            output_stream.write(output_buffer, 0, elem);
+            output_stream.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

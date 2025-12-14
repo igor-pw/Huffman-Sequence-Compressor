@@ -40,6 +40,16 @@ public class ByteReader
         return nextByte;
     }
 
+    public byte [] readCode(int l) {
+        byte [] code = new byte[l];
+
+        for(int i = 0; i < l; i++) {
+            code[i] = nextByte();
+        }
+
+        return code;
+    }
+
     private byte readNextByte() {
         try {
             return (byte)input.read();

@@ -2,71 +2,95 @@ package pl.edu.pw.ee.aisd2025zex5;
 
 public class PriorityQueue
 {
-    private QueueElement head;
 
-    public PriorityQueue(int [] counters) {
-        createPriorityQueue(counters);
-    }
+    private final Node [] elems;
+    private int size;
 
-    public void add(Node elem)
+
+    public PriorityQueue(HashMap hash_map, byte [][] keys)
     {
-        if(isEmpty()) {
-            head = new QueueElement(elem);
-            return;
-        }
-
-        head = add(head, elem);
+        elems = new Node[hash_map.getNumEntries()];
+        size = hash_map.getNumEntries();
+        createPriorityQueue(hash_map, keys);
     }
 
-    public Node pull() {
-
-        if(!isEmpty()) {
-            QueueElement elem = head;
-            head = elem.next;
-            return elem.node;
-        }
-
-        return null;
-    }
-
-    public QueueElement add(QueueElement elem, Node node)
+    private void createPriorityQueue(HashMap hash_map, byte [][] keys)
     {
-        if(elem == null) {
-            return new QueueElement(node);
-
-        }
-        if(node.compareTo(elem.node) > 0) {
-            QueueElement newElem = new QueueElement(node);
-            newElem.next = elem;
-            return newElem;
+        for(int i = 0; i < size; i++) {
+            elems[i] = new Node(hash_map.getCounter(keys[i]), keys[i]);
         }
 
-
-        elem.next = add(elem.next, node);
-        return elem;
+        buildHeap();
     }
 
-    private void createPriorityQueue(int [] counters)
-    {
-        for(int i = 0; i < counters.length; i++) {
-            if(counters[i] != 0) {
-                add(new Node(counters[i], (byte)i));
+    public void buildHeap() {
+        for(int i = size/2-1; i >= 0; i--) {
+            heapDown(i);
+        }
+    }
+
+    public void heapDown(int index) {
+        int smallest = index;
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+
+        if(left < size && elems[left].compareTo(elems[smallest]) > 0) {
+            smallest = left;
+        }
+
+        if(right < size && elems[right].compareTo(elems[smallest]) > 0) {
+            smallest = right;
+        }
+
+        if(smallest != index) {
+            swap(index, smallest);
+            heapDown(smallest);
+        }
+    }
+
+    public void heapUp(int index) {
+        while (index > 0) {
+            int parent = (index - 1) / 2;
+
+            if (elems[index].compareTo(elems[parent]) > 0) {
+                swap(index, parent);
+                index = parent;
+            } else {
+                break;
             }
         }
     }
 
-    public boolean isEmpty() {
-        return head == null;
-    }
-
-    private static class QueueElement
+    public void add(Node node)
     {
-        private final Node node;
-        private QueueElement next;
+        elems[size++] = node;
+        int current = size - 1;
 
-        public QueueElement(Node node) {
-            this.node = node;
-            next = null;
-        }
+        heapUp(current);
     }
+
+    public Node pull()
+    {
+        if(size == 0) {
+            return null;
+        }
+
+        Node root = elems[0];
+        elems[0] = elems[size - 1];
+        size--;
+        heapDown(0);
+
+        return root;
+    }
+
+    public void swap(int i, int j) {
+        Node temp = elems[i];
+        elems[i] = elems[j];
+        elems[j] = temp;
+    }
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
 }

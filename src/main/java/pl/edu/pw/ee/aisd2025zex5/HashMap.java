@@ -1,37 +1,58 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
-import java.security.Key;
+import java.util.Arrays;
 import java.util.Random;
 
 public class HashMap
 {
-    int size;
-    private MapEntry [] elem;
+    private final int Z = 500;
+    private final int size;
+    private int numEntries;
+    private final MapEntry [] elem;
     private final int [] consts_f1;
     private final int [] consts_f2;
 
-    public HashMap(int length)
+    public byte[][] getKeys() {
+        byte [][] keys = new byte[numEntries][];
+
+        int counter = 0;
+
+        for(int i = 0; i < size; i++) {
+            if(elem[i] != null) {
+                keys[counter] = new byte[elem[i].key.length];
+                System.arraycopy(elem[i].key, 0, keys[counter++], 0, elem[i].key.length);
+            }
+        }
+
+        return keys;
+    }
+
+    public HashMap(int size, int max_length)
     {
-        consts_f1 = new int[length];
-        consts_f2 = new int[length];
+        consts_f1 = new int[max_length];
+        consts_f2 = new int[max_length];
+        this.size = size;
 
         Random rand = new Random(337609);
 
-        for(int i = 0; i < length; i++) {
+        for(int i = 0; i < max_length; i++) {
             consts_f1[i] = rand.nextInt() | 1;
             consts_f2[i] = rand.nextInt() | 1;
         }
+
+        elem = new MapEntry[size];
     }
 
+    public int getNumEntries() { return numEntries; }
 
-    public void putCode(byte [] key, byte [] huffman_code)
+    public void putCode(byte [] key, Code huffman_code)
     {
         int i = 0;
         int index = hashFunc(key, i);
 
         while(elem[index] != null) {
 
-            if(elem[index].key == key) {
+            if(Arrays.equals(elem[index].key, key)) {
                 elem[index].huffman_code = huffman_code;
                 return;
             }
@@ -40,22 +61,80 @@ public class HashMap
         }
     }
 
-    public void incrementCounter(byte [] key)
+    public boolean incrementCounter(byte [] key)
     {
         int i = 0;
         int index = hashFunc(key, i);
 
         while(elem[index] != null) {
-            if(elem[index].key == key) {
+            if(Arrays.equals(elem[index].key, key)) {
+                //System.out.println("Wystapila kolizja");
                 elem[index].counter++;
-                return;
+                return false;
             }
 
             index = hashFunc(key, ++i);
         }
 
         elem[index] = new MapEntry(key);
+        numEntries++;
         elem[index].counter++;
+        return true;
+    }
+
+    private void putCorrectedCounter(byte [] key, int corrected_counter)
+    {
+        int i = 0;
+        int index = hashFunc(key, i);
+
+        while(elem[index] != null) {
+            if(Arrays.equals(elem[index].key, key)) {
+                elem[index].counter -= corrected_counter;
+                //System.out.println("skorygowany licznik:" + elem[index].counter);
+                elem[index].counter = Math.max(elem[index].counter, 1000);
+                return;
+            }
+
+            index = hashFunc(key, ++i);
+        }
+    }
+
+    private void putMapEntry(byte [] key, MapEntry map_entry)
+    {
+        int i = 0;
+        int index = hashFunc(key, i);
+
+        while(elem[index] != null) {
+            index = hashFunc(key, ++i);
+        }
+
+        elem[index] = map_entry;
+    }
+
+    public HashMap createFilteredHashMap(int new_size)
+    {
+        HashMap new_hash_map = new HashMap(new_size, consts_f1.length);
+        int filteredNumEntries = 0;
+
+        for(int i = 0; i < size; i++) {
+            if(elem[i] != null) {
+                if(elem[i].key.length >= 2) {
+                    int gain = elem[i].counter * (elem[i].key.length - 1);
+                    if (gain >= Z) {
+                        new_hash_map.putMapEntry(elem[i].key, elem[i]);
+                        filteredNumEntries++;
+                    }
+                }
+                else {
+                    new_hash_map.putMapEntry(elem[i].key, elem[i]);
+                    filteredNumEntries++;
+                }
+            }
+        }
+
+        new_hash_map.numEntries = filteredNumEntries;
+
+        return new_hash_map;
     }
 
     public int getCounter(byte [] key)
@@ -64,7 +143,7 @@ public class HashMap
         int index = hashFunc(key, i);
 
         while(elem[index] != null) {
-            if(elem[index].key == key) {
+            if(Arrays.equals(elem[index].key, key)) {
                return elem[index].counter;
             }
 
@@ -74,13 +153,13 @@ public class HashMap
         return 0;
     }
 
-    public byte [] getHuffmanCode(byte [] key)
+    public Code getCode(byte [] key)
     {
         int i = 0;
         int index = hashFunc(key, i);
 
         while(elem[index] != null) {
-            if(elem[index].key == key) {
+            if(Arrays.equals(elem[index].key, key)) {
                 return elem[index].huffman_code;
             }
 
@@ -108,15 +187,63 @@ public class HashMap
         return (int)( (f1%size + ( (1 + f2%(size-1)) * i))%size );
     }
 
-    private class MapEntry
+    public int filterCounter()
+    {
+        int filterCounter = 0;
+        for(int i = 0; i < size; i++) {
+            if(elem[i] != null) {
+                if(elem[i].key.length >= 2) {
+                    int gain = elem[i].counter * (elem[i].key.length - 1);
+                    if (gain < Z) {
+                        filterCounter++;
+                    }
+                }
+            }
+        }
+        System.out.println("Elementy w hashmap przed odfiltrowaniem: " + numEntries);
+        return numEntries - filterCounter;
+    }
+
+    public int filterCounter(int [] correction_counters)
+    {
+        int filterCounter = 0;
+        for(int i = 0; i < size; i++) {
+            if(elem[i] != null) {
+                if(elem[i].key.length >= 2) {
+                    int gain = elem[i].counter * (elem[i].key.length - 1);
+                    if (gain < Z) {
+                        filterCounter++;
+                    }
+                    else {
+                        for(int j = 0; j < elem[i].key.length; j++) {
+                            correction_counters[elem[i].key[j] & 0xFF] += elem[i].counter;
+                        }
+                    }
+                }
+            }
+        }
+
+        return filterCounter;
+    }
+
+    public void correctCounters(int [] correction_counters)
+    {
+        for(int i = 0; i < correction_counters.length; i++) {
+            byte [] key = new byte[1];
+            key[0] = (byte)i;
+
+            putCorrectedCounter(key, correction_counters[i]);
+        }
+    }
+
+    private static class MapEntry
     {
         public byte [] key;
-        public byte [] huffman_code;
+        public Code huffman_code;
         public int counter;
 
         public MapEntry(byte [] key) {
             this.key = key;
         }
-
     }
 }

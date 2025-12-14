@@ -1,90 +1,107 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
 import java.io.*;
-import java.security.cert.TrustAnchor;
 import java.util.Arrays;
 
-public class FileReader
+public class FileReader extends FileParser
 {
-    private final int[] counters;
+    private final int M = 1_000_000;
+    private final int R = 10*1024*1024;
+    private int M_counter = 0;
+    private int R_counter = 0;
+    private boolean stop_reading = false;
+    private final byte [] buffer;
+    private final BufferedInputStream inputStream;
 
-    public FileReader() {
-        counters = new int[256];
-    }
-
-    public int[] getCounters() {
-        return Arrays.copyOf(counters, counters.length);
-    }
-
-    public void countCodes(String file_path)
-    {
+    public FileReader(String file_path, int max_length) {
+        buffer = new byte [65536];
+        this.max_length = max_length;
         try {
-            InputStream input = new BufferedInputStream(new FileInputStream(file_path));
-            int index = input.read();
-            counters[index & 0xFF]++;
-
-            while((index = input.read()) != -1) {
-                counters[index & 0xFF]++;
-            }
-
-            input.close();
-
+            inputStream = new BufferedInputStream(new FileInputStream(file_path));
         } catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException("Plik nie istnieje");
         }
     }
 
-    public void readFile(String file_path, ByteWriter bw)
+    private void processBuffer(HashMap hash_map, byte [] buffer, int buffer_elem)
     {
-        int b;
-        InputStream input;
-        try {
-            input = new BufferedInputStream(new FileInputStream(file_path));
-            while ((b = input.read()) != -1) {
-                //bw.compressByte();
+        for(int i = 0; i < buffer_elem; i++) {
+            hash_map.incrementCounter(Arrays.copyOfRange(buffer, i, i + 1));
+
+            if(M_counter < M - max_length && max_length >= 2) {
+                for(int j = 2; j <= max_length; j++) {
+                    if(i + j <= buffer_elem) {
+                        if(hash_map.incrementCounter(Arrays.copyOfRange(buffer, i, i + j))) {
+                            M_counter++;
+                        }
+                    }
+                }
             }
-        } catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
+            else if(max_length >= 2) {
+                stop_reading = true;
+                break;
+            }
+            R_counter++;
 
-    }
-
-    public void printFile() {
-
-        char c;
-
-        for(int i = 0; i < 256; i++) {
-            if(counters[i] != 0) {
-                c = (char)i;
-                System.out.println(c + ": " + counters[i]);
+            if(R_counter >= R) {
+                stop_reading = true;
+                break;
             }
         }
     }
 
-    /*public static void main(String [] args)
+    private void processMergedBuffer(HashMap hash_map, byte[] mergedBuffer, int boundary)
     {
-        ByteWriter bw = new ByteWriter();
-        dictionary.compressDictionary(bw);
+        for(int i = 0; i < boundary; i++) {
+
+            if(M >= M_counter - max_length) {
+                return;
+            }
+
+            for(int j = 2; j <= max_length; j++) {
+                if(i + j <= mergedBuffer.length) {
+                    if(i + j > boundary) {
+                        if(hash_map.incrementCounter(Arrays.copyOfRange(mergedBuffer, i, i + j))) {
+                            M_counter++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public HashMap countCodes()
+    {
+        HashMap hash_map = new HashMap(1333337, max_length); //65539
+
+        int buffer_elem;
+        byte [] leftOvers = null;
+        byte [] mergedBuffer;
 
         try {
-            BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream("src/main/java/pl/edu/pw/ee/aisd2025zex5/output.txt"));
-            bw.writeTree(outputStream);
+            while(!stop_reading && (buffer_elem = inputStream.read(buffer, 0, buffer.length)) != -1) {
+                if(leftOvers != null && max_length >= 2) {
+                    mergedBuffer = createMergedBuffer(leftOvers, buffer,  buffer_elem);
+                    processMergedBuffer(hash_map, mergedBuffer, leftOvers.length);
+                }
 
-            //outputStream.close();
-        } catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
+                processBuffer(hash_map, buffer, buffer_elem);
+
+                if(buffer_elem > 0) {
+                    int max_elem = Math.min(buffer_elem, max_length - 1);
+                    leftOvers = Arrays.copyOfRange(buffer, buffer_elem - max_elem, buffer_elem);
+                }
+            }
+
+            //dodac sztuczne dopelnienie jesli nie odczytamy calego plku
+
+            inputStream.close();
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException("Bład odczytu");
         }
 
-        ByteReader br = new ByteReader("src/main/java/pl/edu/pw/ee/aisd2025zex5/output.txt");
+        return hash_map;
+    }
 
-        //Dictionary decompressed = new Dictionary();
-        //decompressed.decompressDictionary(br);
-        //decompressed.printDictionary();
-    }*/
 }
+
