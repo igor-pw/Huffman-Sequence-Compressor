@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 public class FileReader extends FileParser
 {
-    private final int M = 1_000_000;
+    private final int M = 1_200_000;
     private final int R = 10*1024*1024;
     private int M_counter = 0;
     private int R_counter = 0;
@@ -72,7 +72,7 @@ public class FileReader extends FileParser
 
     public HashMap countCodes()
     {
-        HashMap hash_map = new HashMap(1333337, max_length); //65539
+        HashMap hash_map = new HashMap(2_666_667, max_length); //65539
 
         int buffer_elem;
         byte [] leftOvers = null;

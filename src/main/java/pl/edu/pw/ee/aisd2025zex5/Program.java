@@ -15,7 +15,7 @@ public class Program
         HashMap hash_map = file_reader.countCodes();
 
         if(flag_reader.getSequenceLength() > 1) {
-            int filter_counter = hash_map.filterCounter();
+            int filter_counter = hash_map.filterCounter(flag_reader.getSequenceLength());
 
             System.out.println("Elementy do wstawienia: " + filter_counter);
             if (filter_counter < hash_map.getNumEntries()) {
@@ -23,12 +23,12 @@ public class Program
                 filter_counter /= 0.75;
                 filter_counter = BigInteger.valueOf(filter_counter).nextProbablePrime().intValue();
 
-                hash_map = hash_map.createFilteredHashMap(filter_counter);
+                hash_map = hash_map.createFilteredHashMap(filter_counter, flag_reader.getSequenceLength());
             }
 
             int[] correction_counter = new int[256];
 
-            int check_value = hash_map.filterCounter(correction_counter);
+            int check_value = hash_map.filterCounter(correction_counter, flag_reader.getSequenceLength());
 
             if (check_value != 0) {
                 System.out.println("Blad filtrowania");

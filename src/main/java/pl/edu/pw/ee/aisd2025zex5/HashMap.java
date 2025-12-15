@@ -5,7 +5,8 @@ import java.util.Random;
 
 public class HashMap
 {
-    private final int Z = 500;
+    private final double max_margin = 79.0;
+    private final double min_margin = 15.0;
     private final int size;
     private int numEntries;
     private final MapEntry [] elem;
@@ -48,7 +49,10 @@ public class HashMap
     public void putCode(byte [] key, Code huffman_code)
     {
         int i = 0;
-        int index = hashFunc(key, i);
+        int hash_key = hashFunc(key);
+        int f1 = hashFunc1(hash_key);
+        int f2 = hushFunc2(hash_key);
+        int index = hashFunc(f1, f2, i);
 
         while(elem[index] != null) {
 
@@ -57,14 +61,17 @@ public class HashMap
                 return;
             }
 
-            index = hashFunc(key, ++i);
+            index = hashFunc(f1, f2, ++i);
         }
     }
 
     public boolean incrementCounter(byte [] key)
     {
         int i = 0;
-        int index = hashFunc(key, i);
+        int hash_key = hashFunc(key);
+        int f1 = hashFunc1(hash_key);
+        int f2 = hushFunc2(hash_key);
+        int index = hashFunc(f1, f2, i);
 
         while(elem[index] != null) {
             if(Arrays.equals(elem[index].key, key)) {
@@ -73,7 +80,7 @@ public class HashMap
                 return false;
             }
 
-            index = hashFunc(key, ++i);
+            index = hashFunc(f1, f2, ++i);
         }
 
         elem[index] = new MapEntry(key);
@@ -85,42 +92,49 @@ public class HashMap
     private void putCorrectedCounter(byte [] key, int corrected_counter)
     {
         int i = 0;
-        int index = hashFunc(key, i);
+        int hash_key = hashFunc(key);
+        int f1 = hashFunc1(hash_key);
+        int f2 = hushFunc2(hash_key);
+        int index = hashFunc(f1, f2, i);
 
         while(elem[index] != null) {
             if(Arrays.equals(elem[index].key, key)) {
                 elem[index].counter -= corrected_counter;
-                //System.out.println("skorygowany licznik:" + elem[index].counter);
                 elem[index].counter = Math.max(elem[index].counter, 1000);
                 return;
             }
 
-            index = hashFunc(key, ++i);
+            index = hashFunc(f1, f2, ++i);
         }
     }
 
     private void putMapEntry(byte [] key, MapEntry map_entry)
     {
         int i = 0;
-        int index = hashFunc(key, i);
+        int hash_key = hashFunc(key);
+        int f1 = hashFunc1(hash_key);
+        int f2 = hushFunc2(hash_key);
+        int index = hashFunc(f1, f2, i);
 
         while(elem[index] != null) {
-            index = hashFunc(key, ++i);
+            index = hashFunc(f1, f2, ++i);
         }
 
         elem[index] = map_entry;
     }
 
-    public HashMap createFilteredHashMap(int new_size)
+    public HashMap createFilteredHashMap(int new_size, int max_length)
     {
         HashMap new_hash_map = new HashMap(new_size, consts_f1.length);
         int filteredNumEntries = 0;
+        double start_header_cost = (Math.ceil(Math.log(max_length)/Math.log(2) + Math.log(numEntries)/Math.log(2)))/8.0;
 
         for(int i = 0; i < size; i++) {
             if(elem[i] != null) {
                 if(elem[i].key.length >= 2) {
                     int gain = elem[i].counter * (elem[i].key.length - 1);
-                    if (gain >= Z) {
+                    int thresh_hold = calculateThreshHold(elem[i].key.length, max_length, start_header_cost);
+                    if (gain >= thresh_hold) {
                         new_hash_map.putMapEntry(elem[i].key, elem[i]);
                         filteredNumEntries++;
                     }
@@ -140,14 +154,17 @@ public class HashMap
     public int getCounter(byte [] key)
     {
         int i = 0;
-        int index = hashFunc(key, i);
+        int hash_key = hashFunc(key);
+        int f1 = hashFunc1(hash_key);
+        int f2 = hushFunc2(hash_key);
+        int index = hashFunc(f1, f2, i);
 
         while(elem[index] != null) {
             if(Arrays.equals(elem[index].key, key)) {
                return elem[index].counter;
             }
 
-            index = hashFunc(key, ++i);
+            index = hashFunc(f1, f2, ++i);
         }
 
         return 0;
@@ -156,62 +173,78 @@ public class HashMap
     public Code getCode(byte [] key)
     {
         int i = 0;
-        int index = hashFunc(key, i);
+        int hash_key = hashFunc(key);
+        int f1 = hashFunc1(hash_key);
+        int f2 = hushFunc2(hash_key);
+        int index = hashFunc(f1, f2, i);
 
         while(elem[index] != null) {
             if(Arrays.equals(elem[index].key, key)) {
                 return elem[index].huffman_code;
             }
 
-            index = hashFunc(key, ++i);
+            index = hashFunc(f1, f2, ++i);
         }
 
         return null;
     }
 
-    private int hashFunc(byte [] key, int i)
+    private int hashFunc(byte [] key)
     {
-        long f1 = 0;
-        long f2 = 0;
+        long f = 0;
         int fkey = 0;
 
         for(int j = 0; j < key.length; j++) {
             fkey = key[j] & 0xFF;
-            f1 += ((long) consts_f1[j]*fkey);
-            f2 += ((long) consts_f2[j]*fkey);
+            f += ((long) consts_f1[j]*fkey);
         }
 
-        f1 = f1 & Integer.MAX_VALUE;
-        f2 = f2 & Integer.MAX_VALUE;
-
-        return (int)( (f1%size + ( (1 + f2%(size-1)) * i))%size );
+        return (int)f & Integer.MAX_VALUE;
     }
 
-    public int filterCounter()
+    private int hashFunc1(int hashed_key) {
+        return hashed_key % size;
+    }
+
+    private int hushFunc2(int hashed_key) {
+        return (1 + hashed_key % (size - 1));
+    }
+
+    private int hashFunc(int f1, int f2, int i) {
+        return ((f1%size + ( (1 + f2%(size-1)) * i))%size);
+    }
+
+    public int filterCounter(int max_length)
     {
+        double start_header_cost = (Math.ceil(Math.log(max_length)/Math.log(2) + Math.log(numEntries)/Math.log(2)))/8.0;
         int filterCounter = 0;
+
         for(int i = 0; i < size; i++) {
             if(elem[i] != null) {
                 if(elem[i].key.length >= 2) {
                     int gain = elem[i].counter * (elem[i].key.length - 1);
-                    if (gain < Z) {
+                    int thresh_hold = calculateThreshHold(elem[i].key.length, max_length, start_header_cost);
+                    if (gain < thresh_hold) {
                         filterCounter++;
                     }
                 }
             }
         }
-        System.out.println("Elementy w hashmap przed odfiltrowaniem: " + numEntries);
+        System.out.println("Elementy w hashmap przed filtrowaniem: " + numEntries);
         return numEntries - filterCounter;
     }
 
-    public int filterCounter(int [] correction_counters)
+    public int filterCounter(int [] correction_counters, int max_length)
     {
         int filterCounter = 0;
+        double start_header_cost = (Math.ceil(Math.log(max_length)/Math.log(2) + Math.log(numEntries)/Math.log(2)))/8.0;
+
         for(int i = 0; i < size; i++) {
             if(elem[i] != null) {
                 if(elem[i].key.length >= 2) {
                     int gain = elem[i].counter * (elem[i].key.length - 1);
-                    if (gain < Z) {
+                    int thresh_hold = calculateThreshHold(elem[i].key.length, max_length, start_header_cost);
+                    if (gain < thresh_hold) {
                         filterCounter++;
                     }
                     else {
@@ -235,6 +268,18 @@ public class HashMap
             putCorrectedCounter(key, correction_counters[i]);
         }
     }
+
+    private int calculateThreshHold(int length, int max_length, double start_header_cost)
+    {
+        double margin = max_margin - (max_margin - min_margin) * ((double) (length - 2) / (double) (max_length - 2));
+
+        if(length <= 3) {
+            margin = 15.0;
+        }
+
+        return (int) ((start_header_cost + length) * margin);
+    }
+
 
     private static class MapEntry
     {
