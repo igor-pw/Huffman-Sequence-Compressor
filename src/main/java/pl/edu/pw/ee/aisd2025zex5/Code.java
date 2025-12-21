@@ -20,7 +20,9 @@ public class Code
     public byte [] getHuffmanCode() { return huffman_code; }
 
     private void moveLastByte() {
-        huffman_code[elem-1] = (byte) (huffman_code[elem-1] << (8-counter));
+        if(counter > 0) {
+            huffman_code[elem - 1] = (byte) (huffman_code[elem - 1] << (8 - counter));
+        }
     }
 
 }

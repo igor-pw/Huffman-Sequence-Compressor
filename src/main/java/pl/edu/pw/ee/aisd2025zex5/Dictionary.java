@@ -1,6 +1,8 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
+import javax.swing.plaf.basic.BasicTextAreaUI;
 import java.io.File;
+import java.util.ConcurrentModificationException;
 
 public class Dictionary
 {
@@ -9,6 +11,7 @@ public class Dictionary
     public Dictionary(PriorityQueue pq) {
         createDictionary(pq);
     }
+    public Dictionary() {}
 
     public Node getRoot() { return root; }
 
@@ -65,54 +68,127 @@ public class Dictionary
         buffer.removeLSB();
     }
 
-    public void compressDictionary(ByteWriter byte_writer) {
+    public void compressDictionary(ByteWriter byte_writer, int max_length) {
         if(root != null) {
-             compressDictionary(byte_writer, root);
+             compressDictionary(byte_writer, root, max_length);
         }
     }
 
-    private void compressDictionary(ByteWriter byte_writer, Node node)
+    private void compressDictionary(ByteWriter byte_writer, Node node, int max_length)
     {
         int b = node.isLeaf() ? 1 : 0;
 
         byte_writer.addBit(b);
 
         if(b == 1) {
+            if(max_length > 1) {
+                byte_writer.addLength(node.getCode().length, max_length);
+            }
             for(int i = 0; i < node.getCode().length; i++) {
                 byte_writer.addByte(node.getCode()[i]);
             }
         }
 
         if(node.getLeft() != null) {
-            compressDictionary(byte_writer, node.getLeft());
+            compressDictionary(byte_writer, node.getLeft(), max_length);
         }
 
         if(node.getRight() != null) {
-            compressDictionary(byte_writer, node.getRight());
+            compressDictionary(byte_writer, node.getRight(), max_length);
         }
     }
 
-    public void decompressDictionary(ByteReader br, int l) {
-        //root = buildDictionary(br, l);
-        //System.out.println(Integer.toBinaryString(br.getBuffer()));
-        //System.out.println(Integer.toBinaryString(br.nextByte()));
+    public void decompressDictionary(ByteReader br, ByteWriter byte_writer, int max_length) {
+
+        root = buildDictionary(br, max_length);
+        //printDictionary();
+
+        while(!br.isEnd()) {
+            byte [] code = searchDictionary(br);
+            byte_writer.addCode(code);
+        }
     }
 
-    private Node buildDictionary(ByteReader br, int l) {
+    private Node buildDictionary(ByteReader br, int max_length) {
 
         Node newNode = new Node();
         int b = br.nextBit();
 
         if(b == 1) {
-           newNode.setCode(br.readCode(l));
+            int length;
+            if (max_length > 1) {
+                length = br.readLength(max_length);
+            }
+            else {
+                length = 1;
+            }
+            newNode.setCode(br.readCode(length));
         }
 
         else {
-            newNode.setLeft(buildDictionary(br, l));
-            newNode.setRight(buildDictionary(br, l));
+            newNode.setLeft(buildDictionary(br, max_length));
+            newNode.setRight(buildDictionary(br, max_length));
         }
 
         return newNode;
+    }
+
+    /*private Node buildDictionary(ByteReader br, int max_length) {
+        int firstBit = br.nextBit();
+        if (firstBit == 1) {
+            return createLeafNode(br, max_length);
+        }
+
+        Node root = new Node();
+        Node[] nodeArray = new Node[10000000]; // 100k to i tak aż nadto
+        int top = 0;
+        nodeArray[top] = root;
+
+        while (top >= 0) {
+            if (top >= nodeArray.length - 1) {
+                throw new RuntimeException("Drzewo za głębokie! Prawdopodobnie błąd odczytu bitów (nieskończone zera).");
+            }
+
+            Node current = nodeArray[top];
+
+            // 1. Najpierw budujemy lewe poddrzewo
+            if (current.getLeft() == null) {
+                int b = br.nextBit();
+                if (b == 1) {
+                    current.setLeft(createLeafNode(br, max_length));
+                } else {
+                    Node child = new Node();
+                    current.setLeft(child);
+                    nodeArray[++top] = child;
+                    continue; // Idź budować lewe dziecko nowego węzła
+                }
+            }
+
+            // 2. Potem budujemy prawe poddrzewo
+            if (current.getRight() == null) {
+                int b = br.nextBit();
+                if (b == 1) {
+                    current.setRight(createLeafNode(br, max_length));
+                    top--; // Ten węzeł jest pełny, wracamy do rodzica
+                } else {
+                    Node child = new Node();
+                    current.setRight(child);
+                    nodeArray[++top] = child;
+                    continue; // Idź budować lewe dziecko nowego prawego węzła
+                }
+            } else {
+                // Jeśli jakimś cudem tu trafiliśmy, a węzeł jest pełny
+                top--;
+            }
+        }
+        return root;
+    }*/
+
+    private Node createLeafNode(ByteReader br, int max_length) {
+        Node leaf = new Node();
+        int length = (max_length > 1) ? br.readLength(max_length) : 1;
+        leaf.setCode(br.readCode(length));
+        return leaf;
     }
 
     public void printDictionary() {
@@ -121,12 +197,33 @@ public class Dictionary
         }
     }
 
-    private void printDictionary(Node node) {
-        if(node.getRight() != null) {
-            printDictionary(node.getRight());
+    public byte [] searchDictionary(ByteReader byte_reader)
+    {
+        Node current = root;
+        int bit;
+
+        while(true) {
+            if(current.isLeaf()) {
+                return current.getCode();
+            }
+
+            bit = byte_reader.nextBit();
+
+            if(bit == 0) {
+                current = current.getLeft();
+            } else {
+                current = current.getRight();
+            }
+
         }
+    }
+
+    private void printDictionary(Node node) {
         if(node.getLeft() != null) {
             printDictionary(node.getLeft());
+        }
+        if(node.getRight() != null) {
+            printDictionary(node.getRight());
         }
 
         System.out.print("counter: " + node.getCounter() + ", code: ");

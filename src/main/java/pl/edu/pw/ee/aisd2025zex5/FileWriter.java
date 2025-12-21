@@ -1,5 +1,7 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
+import org.w3c.dom.css.Counter;
+
 import java.io.*;
 import java.util.Arrays;
 
@@ -9,10 +11,10 @@ public class FileWriter extends FileParser
     private final byte [] input_buffer;
 
     public FileWriter(String file_path, int max_length) {
-        BufferedOutputStream output_stream;
+        FileOutputStream /*BufferedOutputStream*/ output_stream;
         this.max_length = max_length;
         try {
-            output_stream = new BufferedOutputStream(new FileOutputStream(file_path), 64*1024);
+            output_stream = new /*BufferedOutputStream(new*/ FileOutputStream(file_path);
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Nie można utworzyć pliku");
         }
@@ -71,12 +73,14 @@ public class FileWriter extends FileParser
 
     public void writeTree()
     {
+        int padding = 8-byte_writer.counter;
         byte numberOfZeros = (byte)byte_writer.counter;
         byte_writer.output_buffer[0] = (byte)((numberOfZeros << 5) | byte_writer.output_buffer[0]);
 
-        if(byte_writer.counter > 0) {
-            byte_writer.buffer = (byte) (byte_writer.buffer << byte_writer.counter);
-            byte_writer.addByte(byte_writer.buffer);
+        if(padding > 0) {
+            for(int i = 0; i < padding; i++) {
+                byte_writer.addBit(0);
+            }
         }
     }
 
