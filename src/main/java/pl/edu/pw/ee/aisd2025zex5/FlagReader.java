@@ -16,6 +16,7 @@ public class FlagReader
     public FlagReader(String [] args) {
         this.args = args;
         readFlags();
+        validateParams();
     }
 
     public MODE getMode() { return mode; }
@@ -29,7 +30,6 @@ public class FlagReader
             if(args[i].startsWith("-") && i < args.length-1) {
                 if(!args[i+1].startsWith("-")) {
                     readFlag(args[i].toCharArray()[1], args[++i]);
-                    System.out.println(args[i]);
                 }
             }
         }
@@ -44,6 +44,9 @@ public class FlagReader
                 case 'l' -> {
                     try {
                         sequence_length = Integer.parseInt(valueOfFlag);
+                        if(sequence_length > 1024) {
+                            throw new RuntimeException("Niepoprawna wartosc flagi '-l'");
+                        }
                     } catch (NumberFormatException e) {
                         throw new InvalidValueOfFlagException(typeOfFlag, valueOfFlag);
                     }
@@ -54,13 +57,21 @@ public class FlagReader
     }
 
     private void setMode(char typeOfFlag, String valueOfFlag) {
-        if(valueOfFlag.equals("decomp")) {
+        if (valueOfFlag.equals("decomp")) {
             mode = DECOMP;
             return;
         }
-        if(!valueOfFlag.equals("comp")) {
+        if (!valueOfFlag.equals("comp")) {
             throw new InvalidValueOfFlagException(typeOfFlag, valueOfFlag);
         }
+    }
 
+    private void validateParams() {
+        if(input_path == null) {
+        throw new RuntimeException("Nie podano sciezki pliku wejsciowego");
+        }
+        else if(output_path == null) {
+            throw new RuntimeException("Nie podano sciezki pliku wyjsciowego");
+        }
     }
 }

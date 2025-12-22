@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 public class ByteWriter
 {
-    private FileOutputStream /*BufferedOutputStream*/ output_stream;
+    private FileOutputStream output_stream;
     protected final byte[] output_buffer;
     protected int elem = 0;
     protected byte buffer = 0;
@@ -15,14 +15,11 @@ public class ByteWriter
         output_buffer = new byte[64 * 1024];
     }
 
-    public ByteWriter(FileOutputStream /*BufferedOutputStream*/ output_stream) {
+    public ByteWriter(FileOutputStream output_stream) {
 
         this.output_stream = output_stream;
         output_buffer = new byte[64 * 1024];
 
-        for(int i = 0; i < 3; i++) {
-            addBit(0);
-        }
     }
 
     public ByteWriter(int size) {
@@ -59,7 +56,6 @@ public class ByteWriter
             buffer = 0;
         }
 
-        //System.out.println(elem);
         if(elem >= output_buffer.length) {
             write(output_stream);
         }
@@ -117,15 +113,13 @@ public class ByteWriter
         }
     }
 
-
     private void write(FileOutputStream output_stream) {
 
-        System.out.println("Writing " + elem + " bytes to output stream.");
         try {
             output_stream.write(output_buffer, 0, elem);
             elem = 0;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Blad zapisu pliku");
         }
     }
 
@@ -136,11 +130,28 @@ public class ByteWriter
         }
 
         try {
-            System.out.println("Writing " + elem + " bytes to output stream.");
             output_stream.write(output_buffer, 0, elem);
             output_stream.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Blad zapisu pliku");
+        }
+    }
+
+    public void setNumberOfZeros(String file_path) {
+
+        try (RandomAccessFile random_access_file = new RandomAccessFile(file_path, "rw")) {
+            random_access_file.seek(0);
+
+            int firstByte = random_access_file.read();
+
+            int newFirstByte = ((8 - counter)%8 << 5) | (firstByte & 0xFF);
+
+            random_access_file.seek(0);
+            random_access_file.write(newFirstByte);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Nie znaleziono pliku");
+        } catch (IOException e) {
+            throw new RuntimeException("Blad zapisu pliku");
         }
     }
 }

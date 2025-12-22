@@ -75,7 +75,6 @@ public class HashMap
 
         while(elem[index] != null) {
             if(Arrays.equals(elem[index].key, key)) {
-                //System.out.println("Wystapila kolizja");
                 elem[index].counter++;
                 return false;
             }
@@ -230,7 +229,6 @@ public class HashMap
                 }
             }
         }
-        System.out.println("Elementy w hashmap przed filtrowaniem: " + numEntries);
         return numEntries - filterCounter;
     }
 

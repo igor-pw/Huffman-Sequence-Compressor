@@ -6,6 +6,8 @@ public class Code
     int elem = 0;
     int counter;
 
+    public Code() {}
+
     public Code(int path_length, byte [] code)
     {
         huffman_code = code;

@@ -37,10 +37,6 @@ public class FileReader extends FileParser
                     }
                 }
             }
-            else if(max_length >= 2) {
-                stop_reading = true;
-                break;
-            }
             R_counter++;
 
             if(R_counter >= R) {
@@ -93,7 +89,14 @@ public class FileReader extends FileParser
                 }
             }
 
-            //dodac sztuczne dopelnienie jesli nie odczytamy calego plku
+            if(stop_reading) {
+                for(int i = 0; i < 256; i++) {
+                    byte [] singleByte = new byte[]{(byte) i};
+                    if(hash_map.getCounter(singleByte) == 0) {
+                        hash_map.incrementCounter(singleByte);
+                    }
+                }
+            }
 
             inputStream.close();
         } catch (IOException e) {

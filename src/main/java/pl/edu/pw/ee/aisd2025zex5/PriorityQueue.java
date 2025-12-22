@@ -6,6 +6,7 @@ public class PriorityQueue
     private final Node [] elems;
     private int size;
 
+    public PriorityQueue() { elems = new Node[1024]; }
 
     public PriorityQueue(HashMap hash_map, byte [][] keys)
     {

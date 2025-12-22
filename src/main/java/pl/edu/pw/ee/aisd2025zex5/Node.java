@@ -34,8 +34,6 @@ public class Node implements Comparable<Node>{
 
     public void setCode(byte [] code) { this.code = code; }
 
-    public void setCounter(int counter) { this.counter = counter; }
-
     public boolean isLeaf() {
         return left == null && right == null;
     }
@@ -43,14 +41,5 @@ public class Node implements Comparable<Node>{
     @Override
     public int compareTo(Node node) {
         return -(counter - node.getCounter());
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < code.length; i++) {
-            sb.append(code[i]);
-        }
-        return sb.toString();
     }
 }

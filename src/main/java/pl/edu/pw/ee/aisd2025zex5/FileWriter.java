@@ -1,7 +1,5 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
-import org.w3c.dom.css.Counter;
-
 import java.io.*;
 import java.util.Arrays;
 
@@ -11,15 +9,19 @@ public class FileWriter extends FileParser
     private final byte [] input_buffer;
 
     public FileWriter(String file_path, int max_length) {
-        FileOutputStream /*BufferedOutputStream*/ output_stream;
+        FileOutputStream  output_stream;
         this.max_length = max_length;
         try {
-            output_stream = new /*BufferedOutputStream(new*/ FileOutputStream(file_path);
+            output_stream = new FileOutputStream(file_path);
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Nie można utworzyć pliku");
         }
         byte_writer = new ByteWriter(output_stream);
         input_buffer = new byte[64*1024];
+
+        for(int i = 0; i < 3; i++) {
+            byte_writer.addBit(0);
+        }
     }
 
     private int processBuffer(HashMap hash_map, byte [] buffer, int buffer_elem, int start_pointer)
@@ -71,19 +73,6 @@ public class FileWriter extends FileParser
         return pointer;
     }
 
-    public void writeTree()
-    {
-        int padding = 8-byte_writer.counter;
-        byte numberOfZeros = (byte)byte_writer.counter;
-        byte_writer.output_buffer[0] = (byte)((numberOfZeros << 5) | byte_writer.output_buffer[0]);
-
-        if(padding > 0) {
-            for(int i = 0; i < padding; i++) {
-                byte_writer.addBit(0);
-            }
-        }
-    }
-
     public void writeFile(String file_path, HashMap hash_map)
     {
         BufferedInputStream input_stream;
@@ -93,7 +82,7 @@ public class FileWriter extends FileParser
         try {
             input_stream = new BufferedInputStream(new FileInputStream(file_path));
         } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Blad otwarcia pliku");
         }
 
         int buffer_elem;
@@ -101,18 +90,21 @@ public class FileWriter extends FileParser
         try {
             while((buffer_elem = input_stream.read(input_buffer, 0, input_buffer.length)) != -1)
             {
-                //System.out.println("Read " + buffer_elem + " bytes from input stream.");
                 int pointer = 0;
 
                 if(leftOvers.length > 0 && max_length >= 2) {
                     mergedBuffer = createMergedBuffer(leftOvers, input_buffer, buffer_elem);
-                    pointer = processMergedBuffer(hash_map, mergedBuffer);
-                }
+                    int mergedPointer = processMergedBuffer(hash_map, mergedBuffer);
 
-                pointer -= leftOvers.length;
+                    int bytesConsumedFromInput = mergedPointer - leftOvers.length;
 
-                if(pointer < 0) {
-                    pointer = 0;
+                    if (bytesConsumedFromInput < 0) {
+                        leftOvers = Arrays.copyOfRange(mergedBuffer, mergedPointer, mergedBuffer.length);
+
+                        continue;
+                    } else {
+                        pointer = bytesConsumedFromInput;
+                    }
                 }
 
                 pointer = processBuffer(hash_map, input_buffer, buffer_elem, pointer);
@@ -127,7 +119,7 @@ public class FileWriter extends FileParser
             input_stream.close();
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Blad zapisu pliku");
         }
     }
 

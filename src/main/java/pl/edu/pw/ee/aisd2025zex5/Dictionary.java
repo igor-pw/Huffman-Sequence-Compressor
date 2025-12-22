@@ -13,7 +13,9 @@ public class Dictionary
     }
     public Dictionary() {}
 
-    public Node getRoot() { return root; }
+    public Node getRoot() {
+        return root;
+    }
 
     public Node createTree(Node left, Node right)
     {
@@ -98,14 +100,15 @@ public class Dictionary
         }
     }
 
-    public void decompressDictionary(ByteReader br, ByteWriter byte_writer, int max_length) {
+    public void decompressFile(ByteReader br, ByteWriter byte_writer, int max_length) {
 
         root = buildDictionary(br, max_length);
-        //printDictionary();
 
         while(!br.isEnd()) {
             byte [] code = searchDictionary(br);
-            byte_writer.addCode(code);
+            if(code != null) {
+                byte_writer.addCode(code);
+            }
         }
     }
 
@@ -133,70 +136,6 @@ public class Dictionary
         return newNode;
     }
 
-    /*private Node buildDictionary(ByteReader br, int max_length) {
-        int firstBit = br.nextBit();
-        if (firstBit == 1) {
-            return createLeafNode(br, max_length);
-        }
-
-        Node root = new Node();
-        Node[] nodeArray = new Node[10000000]; // 100k to i tak aż nadto
-        int top = 0;
-        nodeArray[top] = root;
-
-        while (top >= 0) {
-            if (top >= nodeArray.length - 1) {
-                throw new RuntimeException("Drzewo za głębokie! Prawdopodobnie błąd odczytu bitów (nieskończone zera).");
-            }
-
-            Node current = nodeArray[top];
-
-            // 1. Najpierw budujemy lewe poddrzewo
-            if (current.getLeft() == null) {
-                int b = br.nextBit();
-                if (b == 1) {
-                    current.setLeft(createLeafNode(br, max_length));
-                } else {
-                    Node child = new Node();
-                    current.setLeft(child);
-                    nodeArray[++top] = child;
-                    continue; // Idź budować lewe dziecko nowego węzła
-                }
-            }
-
-            // 2. Potem budujemy prawe poddrzewo
-            if (current.getRight() == null) {
-                int b = br.nextBit();
-                if (b == 1) {
-                    current.setRight(createLeafNode(br, max_length));
-                    top--; // Ten węzeł jest pełny, wracamy do rodzica
-                } else {
-                    Node child = new Node();
-                    current.setRight(child);
-                    nodeArray[++top] = child;
-                    continue; // Idź budować lewe dziecko nowego prawego węzła
-                }
-            } else {
-                // Jeśli jakimś cudem tu trafiliśmy, a węzeł jest pełny
-                top--;
-            }
-        }
-        return root;
-    }*/
-
-    private Node createLeafNode(ByteReader br, int max_length) {
-        Node leaf = new Node();
-        int length = (max_length > 1) ? br.readLength(max_length) : 1;
-        leaf.setCode(br.readCode(length));
-        return leaf;
-    }
-
-    public void printDictionary() {
-        if(root != null) {
-            printDictionary(root);
-        }
-    }
-
     public byte [] searchDictionary(ByteReader byte_reader)
     {
         Node current = root;
@@ -205,6 +144,10 @@ public class Dictionary
         while(true) {
             if(current.isLeaf()) {
                 return current.getCode();
+            }
+
+            if(byte_reader.isEnd()) {
+                return null;
             }
 
             bit = byte_reader.nextBit();
@@ -216,28 +159,5 @@ public class Dictionary
             }
 
         }
-    }
-
-    private void printDictionary(Node node) {
-        if(node.getLeft() != null) {
-            printDictionary(node.getLeft());
-        }
-        if(node.getRight() != null) {
-            printDictionary(node.getRight());
-        }
-
-        System.out.print("counter: " + node.getCounter() + ", code: ");
-
-        if(node.getCode() != null) {
-            for (int i = 0; i < node.getCode().length; i++) {
-                System.out.print(Integer.toBinaryString(node.getCode()[i]));
-            }
-        }
-        else {
-            System.out.print("0");
-        }
-
-        System.out.println();
-
     }
 }

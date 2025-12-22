@@ -1,7 +1,5 @@
 package pl.edu.pw.ee.aisd2025zex5;
 
-import java.util.Arrays;
-
 public abstract class FileParser
 {
     protected int max_length;
