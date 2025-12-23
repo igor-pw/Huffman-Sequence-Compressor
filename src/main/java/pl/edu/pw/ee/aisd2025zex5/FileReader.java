@@ -11,13 +11,13 @@ public class FileReader extends FileParser
     private int R_counter = 0;
     private boolean stop_reading = false;
     private final byte [] buffer;
-    private final BufferedInputStream inputStream;
+    private final FileInputStream inputStream;
 
     public FileReader(String file_path, int max_length) {
         buffer = new byte [65536];
         this.max_length = max_length;
         try {
-            inputStream = new BufferedInputStream(new FileInputStream(file_path));
+            inputStream = new FileInputStream(file_path);
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Plik nie istnieje");
         }
